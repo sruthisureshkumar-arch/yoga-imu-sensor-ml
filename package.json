@@ -1,0 +1,14 @@
+{
+  "name": "yoga-imu-sensor-ml",
+  "version": "1.0.0",
+  "description": "Sensor-only (6-axis IMU) yoga pose-step classification — companion project to yoga-pose-correction-ai, following the multi-sensor conventions of Patil et al., Sensors 2021, 21, 2340.",
+  "type": "commonjs",
+  "scripts": {
+    "extract": "node extract_imu_dataset.mjs",
+    "train": "node train_imu_model.js",
+    "predict": "node predict_imu.mjs"
+  },
+  "dependencies": {
+    "@tensorflow/tfjs-node": "^4.0.0"
+  }
+}

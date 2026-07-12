@@ -1,0 +1,3 @@
+node_modules/
+train.log
+imu_training_data.json
