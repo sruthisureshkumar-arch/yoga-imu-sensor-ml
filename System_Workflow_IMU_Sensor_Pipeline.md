@@ -90,7 +90,47 @@ Step-3: step-level prediction: ĉ = argmax(ŷ);
         pose-level prediction: pose(ĉ), stripping the _StepN suffix;
 ```
 
-### 3.4 Evaluation Protocol
+### 3.4 Fuzzy Decision Layer
+
+A Mamdani fuzzy inference system (FIS) converts the classifier's crisp softmax output
+into a graded, interpretable "step-hold degree". Rationale: a yoga step is a *held*
+position — a high angular rate means the wearer is transitioning between steps, so even
+a confident classification should not count as holding. Rather than stacking crisp
+thresholds, both signals enter as linguistic variables.
+
+**Algorithm 3: Fuzzy step-hold inference (Mamdani).**
+
+```
+Inputs:
+  • Motion magnitudes ‖a‖, ‖ω‖ of the current packet;
+  • Classifier top confidence p = max(ŷ);
+  • Calibration {μ, σ} of ‖a‖, ‖ω‖ from imu_norm_params.json;
+Output:
+  • holdDegree ∈ [0, 1]; linguistic state ∈ {Transitioning, Adjusting, Holding};
+
+Step-1: Motion intensity: x = 0.35·z(‖a‖) + 0.65·z(‖ω‖);
+        where z(·) = (· − μ)/σ — membership functions are thus calibrated
+        from the dataset itself (analog of the one-time attention-pose
+        calibration in the reference paper);
+Step-2: Fuzzification (triangular/trapezoidal membership functions):
+        motion x     → {Still, Slow, Fast};
+        confidence p → {Low, Medium, High};
+Step-3: Rule evaluation (min for AND, max-aggregation per output set):
+        R1: IF Still ∧ High   THEN holdDegree High;
+        R2: IF Still ∧ Medium THEN holdDegree Medium;
+        R3: IF Slow  ∧ High   THEN holdDegree Medium;
+        R4: IF Fast           THEN holdDegree Low;
+        R5: IF Low confidence THEN holdDegree Low;
+Step-4: Defuzzification — centroid over the aggregated output sets:
+        holdDegree = Σ y·μ(y) / Σ μ(y),  y ∈ [0, 1];
+Step-5: Linguistic mapping: ≥ 0.66 Holding; ≥ 0.40 Adjusting; else Transitioning;
+```
+
+Implementation: `fuzzy_decision.mjs` (standalone CLI demo + module imported by
+`predict_imu.mjs`). Fired rules and memberships are returned with every evaluation,
+keeping each decision fully traceable.
+
+### 3.5 Evaluation Protocol
 
 Following the paper's two-granularity reporting (fine joint-level vs. coarse key-pose
 accuracy), results are reported at:

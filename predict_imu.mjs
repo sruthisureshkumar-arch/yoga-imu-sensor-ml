@@ -16,6 +16,7 @@ import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { createRequire } from 'module';
 import { buildImuFeatureVector } from './extract_imu_dataset.mjs';
+import { createFuzzySystem } from './fuzzy_decision.mjs';
 
 const require = createRequire(import.meta.url);
 const { tf, loadModel } = require('./tf_env.js');
@@ -46,6 +47,14 @@ async function main() {
   console.log('\nIMU packet:', imu6.join(', '));
   console.log('Top-3 predictions:');
   for (const i of top) console.log(`  ${(scores[i] * 100).toFixed(1).padStart(5)}%  ${labels[i]}`);
+
+  // Fuzzy decision layer: motion intensity (‖a‖, ‖ω‖) + classifier
+  // confidence → graded, interpretable step-hold degree.
+  const fis = createFuzzySystem();
+  const [accelMag, gyroMag] = [feats[6], feats[7]];
+  const fz = fis.evaluate(accelMag, gyroMag, scores[top[0]]);
+  console.log(`\nFuzzy decision: holdDegree ${fz.holdDegree} → ${fz.label}`);
+  console.log(`  motion score ${fz.motionScore}  |  fired rules: ${fz.firedRules.map(f => `${f.rule}→${f.output}@${f.strength}`).join(', ') || 'none'}`);
 }
 
 main().catch(e => { console.error('❌', e); process.exit(1); });

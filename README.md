@@ -28,6 +28,7 @@ parent project is never modified). Of 164,670 samples, the 29,116 from the origi
 | Classes | 74 pose-steps (13 poses) — same label set as the video pipeline |
 | Model | MLP 8 → 256 → 128 → 74, dropout 0.3/0.2, Adam |
 | Split | Stratified 80/20 |
+| Decision | Mamdani fuzzy inference (motion intensity × classifier confidence → graded step-hold degree) |
 
 ## Usage
 
@@ -35,7 +36,9 @@ parent project is never modified). Of 164,670 samples, the 29,116 from the origi
 npm install            # tfjs-node (falls back to pure-JS tfjs if native build unavailable)
 npm run extract        # build imu_training_data.json from ../training_data.json
 npm run train          # train + evaluate → tfjs_imu_model/, imu_model_config.json
-npm run predict        # top-3 prediction demo (random sample or 6 CLI values)
+npm run predict        # top-3 prediction + fuzzy hold-degree demo
+node fuzzy_decision.mjs             # fuzzy layer standalone demo cases
+node fuzzy_decision.mjs 0.5 0.1 0.85   # ‖a‖ ‖ω‖ confidence → holdDegree
 ```
 
 To point the extractor at a dataset elsewhere:
